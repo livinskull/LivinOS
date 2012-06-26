@@ -6,16 +6,16 @@
 #include <textmode.h>
 #include <util.h>
 #include <pmm.h>
-
-
+#include <pit.h>
+#include <pic.h>
 #include <string.h>
+
+#include "config.h"
 
 
 
 
 void init(multiboot_info *pMBoot) {
-    int j=0;
- 
 	textmode_clearscreen(' ', 0);
 	
 	kprintf("Setting up GDT...\n");
@@ -24,6 +24,13 @@ void init(multiboot_info *pMBoot) {
 	kprintf("Setting up IDT...\n");
 	idt_init();
 	int_init();
+	
+	kprintf("Programming PIC...\n");
+	pic_init();
+	
+	kprintf("Setting system frequency to %uHz...\n", CONFIG_SYSTEM_FREQUENCY);
+	pit_phase(CONFIG_SYSTEM_FREQUENCY);
+	
 
 	pmm_init(pMBoot);
 	
@@ -32,7 +39,6 @@ void init(multiboot_info *pMBoot) {
 	
 	
 	puts("init done!\n");
-	//j/=0;
 
 	
 	halt();

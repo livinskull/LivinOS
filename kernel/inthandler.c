@@ -3,6 +3,7 @@
 #include <io.h>
 #include <util.h>
 #include <textmode.h>
+#include <pic.h>
 
 
 /* installs default handlers */
@@ -42,7 +43,23 @@ void int_init() {
 	idt_set_gate(31, (uint32_t) int_stub_31, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
 	
 	
-	/* TODO IRQs */
+	/* IRQs */
+	idt_set_gate(32, (uint32_t) int_stub_32, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
+	idt_set_gate(33, (uint32_t) int_stub_33, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
+	idt_set_gate(34, (uint32_t) int_stub_34, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
+	idt_set_gate(35, (uint32_t) int_stub_35, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
+	idt_set_gate(36, (uint32_t) int_stub_36, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
+	idt_set_gate(37, (uint32_t) int_stub_37, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
+	idt_set_gate(38, (uint32_t) int_stub_38, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
+	idt_set_gate(39, (uint32_t) int_stub_39, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
+	idt_set_gate(40, (uint32_t) int_stub_40, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
+	idt_set_gate(41, (uint32_t) int_stub_41, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
+	idt_set_gate(42, (uint32_t) int_stub_42, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
+	idt_set_gate(43, (uint32_t) int_stub_43, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
+	idt_set_gate(44, (uint32_t) int_stub_44, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
+	idt_set_gate(45, (uint32_t) int_stub_45, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
+	idt_set_gate(46, (uint32_t) int_stub_46, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
+	idt_set_gate(47, (uint32_t) int_stub_47, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
 	
 	
 	/* TODO syscall sw int(s) */
@@ -137,12 +154,7 @@ CpuState *int_handler(CpuState *pState) {
 		/* other stuff, hw IRQs or soft int, call handler if registered, else do nothing */
 		
 		/* hw IRQs need EOI signalled */
-		/* TODO move this stuff to a separate PIC file; use apic if exists */
-		if (pState->ulIntNo > 40)
-			outb(0xA0, 0x20);	// send pic eoi to slave
-		
-		// send pic eoi to master
-		outb(0x20, 0x20);
+		pic_eoi(pState->ulIntNo - 32);
 	}
 	
 	return pNew;
