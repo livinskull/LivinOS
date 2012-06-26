@@ -1,0 +1,7 @@
+default 0
+timeout 10 
+
+
+title LivinOS
+kernel /kernel
+boot

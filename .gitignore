@@ -1,0 +1,6 @@
+floppy.img
+bochsout.txt
+qemu_serial.log
+kernel/kernel
+.kdev4/
+*.o
