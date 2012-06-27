@@ -20,7 +20,7 @@ void idt_set_gate(uint8_t byNum, uint32_t ulBase, uint16_t usSel, uint8_t byFlag
 
 void idt_init(void) {
 	g_pIdt.usLimit = sizeof(IdtEntry) * IDT_NUM_ENTRIES - 1;
-	g_pIdt.ulBase = (uint32_t) &s_Idt;
+	g_pIdt.ulBase = (uint32_t) s_Idt;
 	
 	
 	memset((void *) &s_Idt, 0, sizeof(IdtEntry) * IDT_NUM_ENTRIES);

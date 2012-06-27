@@ -147,11 +147,13 @@ CpuState *int_handler(CpuState *pState) {
 		/* EXCEPTION! */
 		/* panic screen here and some exception handling in the future */
 		int_exception_handler(pState);
-	} else if (pState->ulIntNo == 0x20) {
-		/* IRQ0, timer int, call scheduler */
-		//__asm__ __volatile__("nop");
 	} else {
 		/* other stuff, hw IRQs or soft int, call handler if registered, else do nothing */
+		
+		if (pState->ulIntNo == 32) {
+			/* IRQ0, timer int, call scheduler */
+			
+		}
 		
 		/* hw IRQs need EOI signalled */
 		pic_eoi(pState->ulIntNo - 32);

@@ -25,6 +25,7 @@ void init(multiboot_info *pMBoot) {
 	idt_init();
 	int_init();
 	
+	/* TODO check if APIC there and use; also use apic timer then */
 	kprintf("Programming PIC...\n");
 	pic_init();
 	
@@ -35,13 +36,16 @@ void init(multiboot_info *pMBoot) {
 	pmm_init(pMBoot);
 	
 	
-	// TODO remap PIC/APIC and enable hw ints
+	// enable hw ints
+	__asm__ __volatile__ ("sti");
 	
 	
 	puts("init done!\n");
 
 	
-	halt();
+	while (1)
+		__asm__ __volatile__("hlt");
+	//halt();
 }
 
 

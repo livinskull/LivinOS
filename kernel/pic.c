@@ -25,5 +25,5 @@ void pic_eoi(uint8_t byIrqNo) {
 	if (byIrqNo > 7)
 		outb(PIC_CMD_PORT_SLAVE, 0x20); // also send to slave
 	
-	outb(PIC_CMD_PORT_MASTER, 0x20); // also send to slave
+	outb(PIC_CMD_PORT_MASTER, 0x20);
 }
