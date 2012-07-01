@@ -68,15 +68,6 @@ write_cr3:
 	mov cr3, eax
 	ret
 
-;void tlb_flush(uint32_t virtaddr);
-tlb_flush:
-	push ebp
-	mov ebp,esp
-	cli
-	invlpg [ebp+8]  ;param1 = addr to invalidate
-	sti
-	pop ebp
-	ret
 
 
 readtsc:

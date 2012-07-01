@@ -54,11 +54,9 @@ void *vmm_get_physaddr(void *virtualaddr) {
     uint32_t *pd = (uint32_t *) VMM_PD_ADDRESS;
 	uint32_t *pt = ((uint32_t *)VMM_PT_ADDRESS) + (0x400 * pdindex);
     
-	// Here you need to check whether the PD entry is present.
 	if ((pd[pdindex] & PDE_PRESENT) == 0)
 		return 0;
     
-    // Here you need to check whether the PT entry is present.
 	if ((pt[ptindex] & PTE_PRESENT) == 0)
 		return 0;
  
@@ -82,7 +80,7 @@ void map_page(uint32_t physaddr, uint32_t virtualaddr, uint32_t ulFlags) {
 	if ((pd[pdindex] & PDE_PRESENT) == 0) {
 		/* create new pt */
 		pd[pdindex] = (uint32_t) pmm_alloc() | ulFlags;
-		tlb_flush(pdindex << 22);
+		__asm__ __volatile__("invlpg %0" : : "m" (* (char*) (pdindex << 22)));
 		memset((void *) (pt[ptindex] & PAGE_ADDRESS_MASK), 0, PAGE_SIZE);
 	}
  
@@ -98,9 +96,7 @@ void map_page(uint32_t physaddr, uint32_t virtualaddr, uint32_t ulFlags) {
 	
 	pt[ptindex] = ((uint32_t)physaddr) | (ulFlags & 0xFFF) | 0x01; // Present
  
-    // Now you need to flush the entry in the TLB
-    // or you might not notice the change.
-    tlb_flush(virtualaddr);
+    __asm__ __volatile__("invlpg %0" : : "m" (* (char*) virtualaddr));
 }
 
 
@@ -117,12 +113,13 @@ void *vmm_alloc(uint8_t bKernel) {
 				if ((pt[ptindex] & PTE_PRESENT) == 0) {
 					void *pNew = pmm_alloc();
 					if (!pNew)
-						return (void *) 0xDEADBEEF;
+						return (void *) 0;
 					/* alloced mem is NOT initialized to 0 */
 					pt[ptindex] = (uint32_t) pNew | PTE_WRITE_ACCESS | PTE_PRESENT;
 					if (!bKernel)
 						pt[ptindex] |= PTE_USERLEVEL;
-					tlb_flush((pdindex << 22) | (ptindex << 12));
+					//tlb_flush((pdindex << 22) | (ptindex << 12));
+					__asm__ __volatile__("invlpg %0" : : "m" (* (char*) ((pdindex << 22) | (ptindex << 12))));
 					return (void *) ((pdindex << 22) | (ptindex << 12));
 				}
 			}
@@ -135,33 +132,35 @@ void *vmm_alloc(uint8_t bKernel) {
 		if ((pd[pdindex] & PDE_PRESENT) == 0) {
 			void *pNew = pmm_alloc();
 			if (!pNew)
-				return (void *) 0xDEADBEEF;
+				return (void *) 0;
 			
 			pt = ((uint32_t *)VMM_PT_ADDRESS) + (0x400 * pdindex);
 			
 			pd[pdindex] = (uint32_t) pNew | PDE_WRITE_ACCESS | PDE_PRESENT;
 			if (!bKernel)
 				pd[pdindex] |= PDE_USERLEVEL;
-			tlb_flush((uint32_t) pt);
+
+			__asm__ __volatile__("invlpg %0" : : "m" (* (char*) pt));
 			
 			memset((void *) pt, 0, PAGE_SIZE);
 			
 			pNew = pmm_alloc();
 			if (!pNew)
-				return (void *) 0xDEADBEEF;
+				return (void *) 0;
 			/* alloced mem is NOT initialized to 0 */
 			ptindex = pdindex == 0 ? 1 : 0;
 			pt[ptindex] = (uint32_t) pNew | PTE_PRESENT | PTE_WRITE_ACCESS;
 			if (!bKernel)
 				pt[ptindex] |= PTE_USERLEVEL;
-			tlb_flush((pdindex << 22) | (ptindex << 12));
-			//return (void *) ((pdindex << 22) | (ptindex << 12));
+
+			__asm__ __volatile__("invlpg %0" : : "m" (* (char*) ((pdindex << 22) | (ptindex << 12))));
+
 			return (void *) ((pdindex << 22)  | (ptindex << 12));
 		}
 	}
 	
 	
-	return (void *) 0xDEADBEEF;
+	return (void *) 0;
 }
 
 
@@ -171,6 +170,7 @@ void vmm_free(void *pVirtualAddr) {
     //uint32_t *pd = (uint32_t *)VMM_PD_ADDRESS;
 	uint32_t *pt = ((uint32_t *)VMM_PT_ADDRESS) + (0x400 * pdindex);;
 	
+	pmm_free(pt[ptindex] & PAGE_ADDRESS_MASK);
 	pt[ptindex] = 0;
 }
 
