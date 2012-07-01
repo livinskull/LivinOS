@@ -4,10 +4,16 @@
 #include <util.h>
 #include <textmode.h>
 #include <pic.h>
+#include <string.h>
+
+
+static IntHandler s_Handlers[256];
 
 
 /* installs default handlers */
 void int_init() {
+	memset(s_Handlers, 0, sizeof(IntHandler) * 256);
+	
 	/* exceptions */
 	idt_set_gate(0, (uint32_t) int_stub_0, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
 	idt_set_gate(1, (uint32_t) int_stub_1, 0x08, IDT_FLAG_INTERRUPT_GATE | IDT_FLAG_RING0 | IDT_FLAG_PRESENT);
@@ -152,7 +158,6 @@ CpuState *int_handler(CpuState *pState) {
 		
 		if (pState->ulIntNo == 32) {
 			/* IRQ0, timer int, call scheduler */
-			
 		}
 		
 		/* hw IRQs need EOI signalled */
@@ -161,3 +166,11 @@ CpuState *int_handler(CpuState *pState) {
 	
 	return pNew;
 }
+
+/* we could use a return value for the handler funcs to check if irq got handled, 
+ * if not, we could send it to the next handler for the same irq */
+int int_register_handler(uint8_t byNum, IntHandler pHandler) {
+	s_Handlers[byNum] = pHandler;
+	return 0;
+}
+

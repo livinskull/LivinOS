@@ -35,7 +35,7 @@ logprefix: %t%e%d
 debugger_log: -
 panic: action=ask
 error: action=report
-info: action=report
+info: action=ignore
 debug: action=report
 pass: action=fatal
 keyboard_type: mf

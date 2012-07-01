@@ -12,8 +12,12 @@ typedef struct {
 }__attribute__((packed)) CpuState;
 
 
+typedef void (*IntHandler)(CpuState*);
+
+
 void int_init();
 CpuState *int_handler(CpuState *pState);
+int int_register_handler(uint8_t byNum, IntHandler pHandler);
 
 
 /* exceptions */

@@ -44,7 +44,7 @@ void pmm_init(multiboot_info *m_info) {
 	if (m_info->flags & MB_FLAG_MEMORY) {
 		iMemTotal = m_info->mem_lower + m_info->mem_upper;
 		iBitmapLen = ((iMemTotal*1024)/PMM_BLOCK_SIZE)/8;
-		kprintf("RAM: %uMB\nbitmaplen: %u\n", iMemTotal/1024, iBitmapLen);
+		kprintf("RAM: %u MB\nbitmaplen: %u\n", iMemTotal/1024, iBitmapLen);
 	}
 	
 	// if we have a memory map, use it 
