@@ -52,6 +52,7 @@ void *vmm_alloc(uint8_t bKernel);
 void map_page(uint32_t physaddr, uint32_t virtualaddr, uint32_t ulFlags);
 void *vmm_get_physaddr(void *virtualaddr);
 void vmm_free(void *pVirtualAddr);
+void *vmm_automap(void *pPhysical, uint8_t bKernel);
 
 
 #endif

@@ -61,6 +61,7 @@ void pmm_init(multiboot_info *m_info) {
 	
 	// mark kernel memory as used
 	pmm_markRangeUsed((uint32_t) &phys_kernel_start, kernel_stack);
+    //kprintf("kernel at 0x%x - 0x%x, kernel stack at 0x%x\n", (uint32_t) &phys_kernel_start, (uint32_t) &phys_kernel_end, kernel_stack);
 	
 	// mark multiboot-info as used
 	if ((uint32_t) m_info > 0x100000) {

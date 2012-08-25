@@ -101,6 +101,17 @@ void map_page(uint32_t physaddr, uint32_t virtualaddr, uint32_t ulFlags) {
 
 
 void *vmm_alloc(uint8_t bKernel) {
+	void *pNew = pmm_alloc();
+	
+	if (!pNew) {
+        kprintf("OUT OF RAM!\n");
+		return (void *) 0;
+    }
+	
+	return vmm_automap(pNew, bKernel);
+}
+
+void *vmm_automap(void *pPhysical, uint8_t bKernel) {
 	uint32_t *pd = (uint32_t *)VMM_PD_ADDRESS;
 	uint32_t pdindex = 0, ptindex = 0;
 	uint32_t *pt;
@@ -111,11 +122,8 @@ void *vmm_alloc(uint8_t bKernel) {
 			pt = ((uint32_t *)VMM_PT_ADDRESS) + (0x400 * pdindex);
 			for (ptindex = pdindex == 0 ? 1 : 0; ptindex < PAGE_TABLE_LENGTH; ++ptindex) {
 				if ((pt[ptindex] & PTE_PRESENT) == 0) {
-					void *pNew = pmm_alloc();
-					if (!pNew)
-						return (void *) 0;
 					/* alloced mem is NOT initialized to 0 */
-					pt[ptindex] = (uint32_t) pNew | PTE_WRITE_ACCESS | PTE_PRESENT;
+					pt[ptindex] = (uint32_t) pPhysical | PTE_WRITE_ACCESS | PTE_PRESENT;
 					if (!bKernel)
 						pt[ptindex] |= PTE_USERLEVEL;
 					//tlb_flush((pdindex << 22) | (ptindex << 12));
@@ -144,12 +152,8 @@ void *vmm_alloc(uint8_t bKernel) {
 			
 			memset((void *) pt, 0, PAGE_SIZE);
 			
-			pNew = pmm_alloc();
-			if (!pNew)
-				return (void *) 0;
-			/* alloced mem is NOT initialized to 0 */
 			ptindex = pdindex == 0 ? 1 : 0;
-			pt[ptindex] = (uint32_t) pNew | PTE_PRESENT | PTE_WRITE_ACCESS;
+			pt[ptindex] = (uint32_t) pPhysical | PTE_PRESENT | PTE_WRITE_ACCESS;
 			if (!bKernel)
 				pt[ptindex] |= PTE_USERLEVEL;
 
@@ -158,7 +162,6 @@ void *vmm_alloc(uint8_t bKernel) {
 			return (void *) ((pdindex << 22)  | (ptindex << 12));
 		}
 	}
-	
 	
 	return (void *) 0;
 }
@@ -170,7 +173,8 @@ void vmm_free(void *pVirtualAddr) {
     //uint32_t *pd = (uint32_t *)VMM_PD_ADDRESS;
 	uint32_t *pt = ((uint32_t *)VMM_PT_ADDRESS) + (0x400 * pdindex);;
 	
-	pmm_free(pt[ptindex] & PAGE_ADDRESS_MASK);
+	// free physical page
+	//pmm_free((void *) (pt[ptindex] & PAGE_ADDRESS_MASK));
 	pt[ptindex] = 0;
 }
 

@@ -15,6 +15,8 @@ extern void write_cr0(uint32_t val);
 extern void write_cr3(uint32_t val);
 
 
+uint32_t sprintf(char *buff, const char *format,...);
+
 
 #endif
 
