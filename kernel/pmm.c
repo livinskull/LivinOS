@@ -1,11 +1,12 @@
 #include <pmm.h>
 #include <stdlib.h>
 #include <textmode.h>
+#include <paging.h>
 
 
 static uint8_t aBitmap[PMM_BITMAP_LENGTH];
 static uint32_t iMemTotal = 32*1024*1024;	// 32MB default, if detection fails
-static uint32_t iBitmapLen = (32*1024*1024/PMM_BLOCK_SIZE)/8;	// holds actual bitmap length (adapted to available RAM)
+static uint32_t iBitmapLen = (32*1024*1024/PMM_BLOCK_SIZE)/8;	// holds actual bitmap length in BYTES (adapted to available RAM)
 
 
 // internal functions
@@ -13,6 +14,7 @@ static uint8_t pmm_getBit(uint32_t iBitNum);
 static void pmm_unsetBit(uint32_t iBitNum);
 static void pmm_setBit(uint32_t iBitNum);
 
+// used == bit set
 
 
 static inline void __attribute__((always_inline)) pmm_markRangeUnused(uint32_t iStart, uint32_t iEnd) {
@@ -39,8 +41,11 @@ void pmm_init(multiboot_info *m_info) {
 	
 	// init bitmap to all mem free
 	for (i=0; i<PMM_BITMAP_LENGTH; ++i)
-		aBitmap[i] = 0xFF;
+		aBitmap[i] = 0x00;
 	
+    
+    
+    
 	if (m_info->flags & MB_FLAG_MEMORY) {
 		iMemTotal = m_info->mem_lower + m_info->mem_upper;
 		iBitmapLen = ((iMemTotal*1024)/PMM_BLOCK_SIZE)/8;
@@ -50,18 +55,23 @@ void pmm_init(multiboot_info *m_info) {
 	// if we have a memory map, use it 
 	if (m_info->flags & MB_FLAG_MMAP) {
 		// mark all reserved memory blocks as used
-		for (mmap = (multiboot_mmap_entry *) m_info->mmap_addr; (uint32_t) mmap < m_info->mmap_addr + m_info->mmap_length; ++mmap) {
-			if (mmap->type == MB_MEMORY_AVAILABLE) 	// if memory not free
-				pmm_markRangeUnused((uint32_t) mmap->addr, (uint32_t) mmap->addr + (uint32_t) mmap->len);
+		kprintf("used mem:\n");
+		for (mmap = (multiboot_mmap_entry *) (m_info->mmap_addr + KERNEL_VIRTUAL_BASE); (uint32_t) mmap < m_info->mmap_addr + m_info->mmap_length; ++mmap) {
+			if (mmap->type == MB_MEMORY_RESERVED) {	// if memory not free
+				pmm_markRangeUsed((uint32_t) mmap->addr, (uint32_t) mmap->addr + (uint32_t) mmap->len);
+                kprintf("0x%x - 0x%x\n", (uint32_t) mmap->addr, (uint32_t) mmap->addr + (uint32_t) mmap->len);
+            }
 		}
 	}
 	
 	// dont use any memory below 1 MB (0x0 == NULL pointer, Video RAM)
-	pmm_markRangeUsed(0x0, 0x100000);
+	//pmm_markRangeUsed(0x0, 0x100000);
 	
+
 	// mark kernel memory as used
-	pmm_markRangeUsed((uint32_t) &phys_kernel_start, kernel_stack);
-    //kprintf("kernel at 0x%x - 0x%x, kernel stack at 0x%x\n", (uint32_t) &phys_kernel_start, (uint32_t) &phys_kernel_end, kernel_stack);
+	pmm_markRangeUsed(0, ((uint32_t) &phys_kernel_end) - KERNEL_VIRTUAL_BASE);    
+    
+#if 0
 	
 	// mark multiboot-info as used
 	if ((uint32_t) m_info > 0x100000) {
@@ -83,6 +93,7 @@ void pmm_init(multiboot_info *m_info) {
 			}
 		}
 	}
+#endif
 }
 
 /**
@@ -97,7 +108,9 @@ void *pmm_alloc() {
 		if (aBitmap[i] != 0xFF) { // search only when not all 8 are used
 			for (j=0; j<8; ++j) {
 				if (pmm_getBit(i*8+j) == 0) {	// if block unused
+                    //kprintf("free pmm block %d ", i*8+j);
 					pmm_setBit(i*8+j);
+                    //kprintf("now %d\n",pmm_getBit(i*8+j));
 					return (void *)((i*8+j)*PMM_BLOCK_SIZE);
 				}
 			}
@@ -121,8 +134,8 @@ void *pmm_range_alloc(uint32_t num) {
 		if (pmm_getBit(i) == 0) {
 			++found;
 			if (found == num) {
-				pmm_markRangeUsed((i - found)*PMM_BLOCK_SIZE, i*PMM_BLOCK_SIZE);
-				return (void *) ((i-found)*PMM_BLOCK_SIZE);
+				pmm_markRangeUsed((i - found + 1)*PMM_BLOCK_SIZE, i*PMM_BLOCK_SIZE);
+				return (void *) ((i-found + 1)*PMM_BLOCK_SIZE);
 			}
 		} else {
 			found = 0;
@@ -188,9 +201,8 @@ void pmm_free(void *p) {
  * @param uint32_t iBitNum Bit to set
  */
 void pmm_setBit(uint32_t iBitNum) {
-	uint32_t b = 0;
-	b |= (1 << (iBitNum % 8));
-	aBitmap[iBitNum >> 3] |= (uint8_t) b;
+	uint8_t b = (1 << (iBitNum % 8));
+	aBitmap[iBitNum >> 3] |= b;
 }
 
 /**
@@ -198,9 +210,8 @@ void pmm_setBit(uint32_t iBitNum) {
  * @param uint32_t iBitNum Bit to set
  */
 void pmm_unsetBit(uint32_t iBitNum) {
-	uint32_t b = 0;
-	b |= (1 << (iBitNum % 8));
-	aBitmap[iBitNum >> 3] &= ~b;
+	uint8_t b = (1 << (iBitNum % 8));
+	aBitmap[iBitNum >> 3] &= (~b);
 }
 
 /**
@@ -208,13 +219,8 @@ void pmm_unsetBit(uint32_t iBitNum) {
  * @param uint32_t iBitNum Bit to get
  */
 uint8_t pmm_getBit(uint32_t iBitNum) {
-	uint8_t Bit;
-	uint32_t b=0;
-	
-	b |= (1 << (iBitNum % 8));
-	Bit = aBitmap[iBitNum >> 3];
-	Bit &= b;
-	
-	return Bit?1:0;
+	uint8_t b = (1 << (iBitNum % 8));
+    
+	return (aBitmap[iBitNum >> 3] & b) ? 1 : 0;
 }
 

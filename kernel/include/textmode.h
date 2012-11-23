@@ -32,6 +32,7 @@ typedef enum {
 #define TEXTMODE_COLOR(fg,bg) ((bg << 4) | fg)
 
 
+void textmode_init();
 //only background color relevant when using ' '
 extern void textmode_clearscreen(uint8_t byChar, uint8_t byCol);
 

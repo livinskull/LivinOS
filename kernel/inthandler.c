@@ -113,6 +113,7 @@ void int_exception_handler(CpuState *r) {
 		"Reserved"
 	};
 	
+
 	// TODO make it BLUE! (or maybe sth nicer, users hate bluescreens :D)
 	textmode_clearscreen(' ',0);
 	
@@ -125,14 +126,14 @@ void int_exception_handler(CpuState *r) {
 	kprintf("ESI = %x\t\tEDI = %x\t\tEIP = %x\n",r->esi, r->edi, r->eip);
 	kprintf("\nES = %x\t\tCS = %x\t\tSS = %x\n",r->es, r->cs, r->ss);
 	kprintf("DS = %x\t\tFS = %x\t\tGS = %x\n", r->ds, r->fs, r->gs);
-	kprintf("\nFlags:\t\tStack Trace\n");
-	kprintf("CF %d\t\t%x: %x\n", r->eflags & 1, (uint32_t) (r->esp), *(uint32_t *) (r->esp));
-	kprintf("PF %d\t\t%x: %x\n", (r->eflags & 4)/4, (uint32_t) (r->esp + 4), *(uint32_t *) (r->esp + 4));
-	kprintf("AF %d\t\t%x: %x\n", (r->eflags & 16)/16, (uint32_t) (r->esp + 8), *(uint32_t *) (r->esp + 8));
-	kprintf("ZF %d\t\t%x: %x\n", (r->eflags & 64)/64, (uint32_t) (r->esp + 12), *(uint32_t *) (r->esp + 12));
-	kprintf("SF %d\t\t%x: %x\n", (r->eflags & 128)/128, (uint32_t) (r->esp + 16), *(uint32_t *) (r->esp + 16));
-	kprintf("DF %d\t\t%x: %x\n", (r->eflags & 1024)/1024, (uint32_t) (r->esp + 20), *(uint32_t *) (r->esp + 20));
-	kprintf("OF %d\t\t%x: %x\n", (r->eflags & 2048)/2048, (uint32_t) (r->esp + 24), *(uint32_t *) (r->esp + 24)); 
+	kprintf("\nFlags:\n");
+	kprintf("CF %d\n", r->eflags & 1);
+	kprintf("PF %d\n", (r->eflags & 4)/4);
+	kprintf("AF %d\n", (r->eflags & 16)/16);
+	kprintf("ZF %d\n", (r->eflags & 64)/64);
+	kprintf("SF %d\n", (r->eflags & 128)/128);
+	kprintf("DF %d\n", (r->eflags & 1024)/1024);
+	kprintf("OF %d\n", (r->eflags & 2048)/2048); 
 
 	if (r->ulIntNo == 14) {		//if page-fault
 		kprintf("Page adress: %x\n", read_cr2());
@@ -158,6 +159,7 @@ CpuState *int_handler(CpuState *pState) {
 		
 		if (pState->ulIntNo == 32) {
 			/* IRQ0, timer int, call scheduler */
+            //kprintf(" tick ");
 		}
 		
 		/* hw IRQs need EOI signalled */

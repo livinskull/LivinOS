@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 
+
 extern void halt(void);
 extern void gdt_flush(void);
 extern void idt_load(void);

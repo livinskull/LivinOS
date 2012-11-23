@@ -1,7 +1,7 @@
 [extern g_Pos]
 
 [global textmode_clearscreen]
-
+[extern pScreen]
 
 ; implemented in asm for greater performance
 ; void textmode_clearscreen(uint8_t byChar, uint8_t byCol)
@@ -18,7 +18,8 @@ textmode_clearscreen:
 	shl eax, 16
 	mov ax, dx
 
-	mov edi, 0xb8000
+	;mov edi, 0xb8000
+    mov edi, [pScreen]
 
 	mov ecx, 1000	; 80x25 = 4000 bytes = 1000 dwords
 	rep stosd

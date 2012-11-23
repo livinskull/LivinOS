@@ -2,7 +2,7 @@
 #include <util.h>
 
 
-#define GDT_NUM_ENTRIES		5
+#define GDT_NUM_ENTRIES		4
 
 
 static GdtEntry gdt[GDT_NUM_ENTRIES];

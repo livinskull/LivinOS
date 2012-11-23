@@ -1,15 +1,22 @@
 #include <textmode.h>
 #include <string.h>
+#include <paging.h>
 #include "config.h"
 
 
 uint32_t g_Pos = 0;		// current position in video memory
-static uint16_t *pScreen = (uint16_t *) 0xb8000;
+uint16_t *pScreen = (uint16_t *) 0;
 static uint16_t s_Attribute = 0x0700;	// current attribute byte
 
 
 #define GETX	(g_Pos % TEXTMODE_COLS)
 #define GETY	((g_Pos - GETX) / TEXTMODE_COLS)
+
+void textmode_init() {
+    // already mapped with 4MB kernel mapping
+    //pScreen = (uint16_t *) vmm_automap((void *) 0xb8000, 1);
+    pScreen = (uint16_t *) (0xb8000 + KERNEL_VIRTUAL_BASE);
+}
 
 
 
