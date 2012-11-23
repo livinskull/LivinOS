@@ -13,7 +13,8 @@ floppy.img: all
 	mcopy -o -i floppy.img kernel/kernel  ::/
 
 test-qemu: floppy.img
-	qemu-system-i386 -fda floppy.img -boot a -serial stdio | tee qemu_serial.log
+	qemu-system-i386 -no-kvm -fda floppy.img -boot a -serial stdio | tee qemu_serial.log
+	#qemu-kvm -fda floppy.img -boot a -serial stdio | tee qemu_serial.log
 
 test-bochs: floppy.img
 	bochs -f bochsrc.txt
