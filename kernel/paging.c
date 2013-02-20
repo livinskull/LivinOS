@@ -4,61 +4,21 @@
 #include <string.h>
 #include <textmode.h>
 
-extern uint32_t phys_kernel_end;
 extern uint32_t BootPageDirectory;
 
 // used for paging kernel when pmm not initialized yet
-//static uint32_t s_aFirstPd[PAGE_DIRECTORY_LENGTH];
 static uint32_t s_aFirstPt[PAGE_TABLE_LENGTH];
 static uint8_t s_bFirst = 1;
 
+
+
 void vmm_init() {
-	uint32_t ulAddr,i,npt;
-	//uint32_t *pd = pmm_alloc();
     uint32_t *pd = (uint32_t *) &BootPageDirectory;
-	//uint32_t *pt = 0;
-	
     
-#if 0
-	/* dont use paging functions here as paging isnt enabled yet */
-	
-	/* identity map all kernel mem including alloced mem */
-	/* kernel_stack comes after kernel_end; add some buffer (1MB) for pmm_allocs so far 
-	 (they _should_ alloc before kernel anyway, but who cares)  */
-	npt = 1 + ((phys_kernel_end & 0xfffff000) + 0x101000) / PAGE_SIZE / PAGE_TABLE_LENGTH;
-	kprintf("num pagetables for kernel: %d\n", npt);
-	pt = pmm_range_alloc(npt);
-    
-    kprintf("pd alloced @ 0x%x, pt(s) @ 0x%x\n", pd, pt);
-	
-	if (pd == 0 || pt == 0) {
-		puts("allocate space for page stuff failed\n");
-		return;
-	}
-#endif
-
-	//memset(s_aFirstPd, 0, PAGE_SIZE);
 	memset(s_aFirstPt, 0, PAGE_SIZE);
-
-
-	//for (ulAddr =  i = 0; i < PAGE_TABLE_LENGTH; ++i, ulAddr += 4096)
-		//s_aFirstPt[i] = ulAddr | PTE_WRITE_ACCESS | PTE_PRESENT;
-	
-	/* enter tables to pd */
-	//for (i=0; i<npt; ++i) 
-		//s_aFirstPd[KERNEL_VIRTUAL_BASE >> 22] = ((uint32_t) s_aFirstPt-KERNEL_VIRTUAL_BASE) | PDE_WRITE_ACCESS | PDE_PRESENT;
-
 
 	/* map pd as last pt in kernel space */
 	pd[VMM_PT_ADDRESS >> 22] = (uint32_t) ((uint32_t) pd-KERNEL_VIRTUAL_BASE) | PDE_WRITE_ACCESS | PDE_PRESENT;
-    
-    //kprintf("map pd %x to %x\n", pd, VMM_PT_ADDRESS);
-    
-	//puts("Enabling paging...\n");
-    
-	/* enable paging */
-	//write_cr3((uint32_t) s_aFirstPd - KERNEL_VIRTUAL_BASE);
-	//write_cr0(read_cr0() | 0x80000000);
 }
 
 
@@ -125,9 +85,13 @@ void *vmm_alloc(uint8_t bKernel) {
 
 void *vmm_automap(void *pPhysical, uint8_t bKernel) {
 	uint32_t *pd = (uint32_t *) VMM_PD_ADDRESS;
-	uint32_t pdindex = 0, ptindex = 0;
+	uint32_t pdindex = 0, ptindex = 0, offset=0;
 	uint32_t *pt;
-	
+    
+    // auto-align address and add offset on return 
+    offset = (uint32_t) pPhysical & 0xfff;
+    pPhysical = (uint32_t) pPhysical & 0xfffff000;
+
 	
     if (bKernel)  {
         for (pdindex = (KERNEL_VIRTUAL_BASE >> 22); pdindex < PAGE_DIRECTORY_LENGTH; ++pdindex) {
@@ -138,7 +102,7 @@ void *vmm_automap(void *pPhysical, uint8_t bKernel) {
                     if ((pt[ptindex] & PTE_PRESENT) == 0) {
                         pt[ptindex] = (uint32_t) pPhysical | PTE_WRITE_ACCESS | PTE_PRESENT;
                         __asm__ __volatile__("invlpg %0" : : "m" (* (char*) ((pdindex << 22) | (ptindex << 12))));
-                        return (void *) ((pdindex << 22) | (ptindex << 12));
+                        return ((void *) ((pdindex << 22) | (ptindex << 12))) + offset;
                     }
                 }
             }
@@ -163,7 +127,7 @@ void *vmm_automap(void *pPhysical, uint8_t bKernel) {
                 pt[ptindex] = (uint32_t) pPhysical | PTE_PRESENT | PTE_WRITE_ACCESS;
 
                 __asm__ __volatile__("invlpg %0" : : "m" (* (char*) ((pdindex << 22) | (ptindex << 12))));
-                return (void *) ((pdindex << 22)  | (ptindex << 12));
+                return ((void *) ((pdindex << 22)  | (ptindex << 12))) + offset;
             }
         }
     }
@@ -175,7 +139,6 @@ void *vmm_automap(void *pPhysical, uint8_t bKernel) {
 void vmm_free(void *pVirtualAddr) {
 	uint32_t pdindex = (uint32_t) pVirtualAddr >> 22;
     uint32_t ptindex = (uint32_t) pVirtualAddr >> 12 & 0x03FF;
-    //uint32_t *pd = (uint32_t *)VMM_PD_ADDRESS;
 	uint32_t *pt = ((uint32_t *) VMM_PT_ADDRESS) + (0x400 * pdindex);;
 	
 	// free physical page

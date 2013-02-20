@@ -38,10 +38,8 @@
 #define PDE_AVAILABLE3		2048
 
 
-// TODO fix this shit, page stuff is at end of 4 gig, kernel space at start...
-//#define VMM_USERSPACE_START	0x40000000		// 1GB mark
-#define KERNEL_VIRTUAL_BASE     0xC0000000      // 3GB userspace, 1GB kernel
 
+#define KERNEL_VIRTUAL_BASE     0xC0000000      // 3GB userspace, 1GB kernel
 
 #define VMM_PD_ADDRESS      0xFFFFF000  // the pd is mapped as a pagetable to that address
 #define VMM_PT_ADDRESS      0xFFC00000

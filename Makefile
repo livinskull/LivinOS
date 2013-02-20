@@ -14,7 +14,6 @@ floppy.img: all
 
 test-qemu: floppy.img
 	qemu-system-i386 -no-kvm -fda floppy.img -boot a -serial stdio | tee qemu_serial.log
-	#qemu-kvm -fda floppy.img -boot a -serial stdio | tee qemu_serial.log
 
 test-bochs: floppy.img
 	bochs -f bochsrc.txt

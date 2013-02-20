@@ -42,8 +42,6 @@ void pmm_init(multiboot_info *m_info) {
 	// init bitmap to all mem free
 	for (i=0; i<PMM_BITMAP_LENGTH; ++i)
 		aBitmap[i] = 0x00;
-	
-    
     
     
 	if (m_info->flags & MB_FLAG_MEMORY) {
@@ -55,13 +53,29 @@ void pmm_init(multiboot_info *m_info) {
 	// if we have a memory map, use it 
 	if (m_info->flags & MB_FLAG_MMAP) {
 		// mark all reserved memory blocks as used
+        // TODO m_info pointers need to be mapped
+        //multiboot_mmap_entry *tmp = vmm_automap((void *) m_info->mmap_addr, 1);
+        
 		kprintf("used mem:\n");
+        
+#if 1
 		for (mmap = (multiboot_mmap_entry *) (m_info->mmap_addr + KERNEL_VIRTUAL_BASE); (uint32_t) mmap < m_info->mmap_addr + m_info->mmap_length; ++mmap) {
 			if (mmap->type == MB_MEMORY_RESERVED) {	// if memory not free
 				pmm_markRangeUsed((uint32_t) mmap->addr, (uint32_t) mmap->addr + (uint32_t) mmap->len);
                 kprintf("0x%x - 0x%x\n", (uint32_t) mmap->addr, (uint32_t) mmap->addr + (uint32_t) mmap->len);
             }
 		}
+#else
+        for (mmap = (multiboot_mmap_entry *) tmp; (uint32_t) mmap < tmp + m_info->mmap_length; ++mmap) {
+            if (mmap->type == MB_MEMORY_RESERVED) { // if memory not free
+                pmm_markRangeUsed((uint32_t) mmap->addr, (uint32_t) mmap->addr + (uint32_t) mmap->len);
+                kprintf("0x%x - 0x%x\n", (uint32_t) mmap->addr, (uint32_t) mmap->addr + (uint32_t) mmap->len);
+            }
+        }
+        vmm_free(tmp);
+#endif
+		
+		
 	}
 	
 	// dont use any memory below 1 MB (0x0 == NULL pointer, Video RAM)
